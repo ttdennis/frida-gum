@@ -89,6 +89,7 @@ static gboolean gum_emit_range (const GumRangeDetails * details,
 GUMJS_DECLARE_FUNCTION (gumjs_process_enumerate_system_ranges)
 GUMJS_DECLARE_FUNCTION (gumjs_process_enumerate_malloc_ranges)
 GUMJS_DECLARE_FUNCTION (gumjs_process_set_exception_handler)
+GUMJS_DECLARE_FUNCTION (gumjs_process_add_exception_handler)
 
 static GumDukExceptionHandler * gum_duk_exception_handler_new (
     GumDukHeapPtr callback, GumDukCore * core);
@@ -109,6 +110,7 @@ static const duk_function_list_entry gumjs_process_functions[] =
   { "enumerateSystemRanges", gumjs_process_enumerate_system_ranges, 0 },
   { "_enumerateMallocRanges", gumjs_process_enumerate_malloc_ranges, 1 },
   { "setExceptionHandler", gumjs_process_set_exception_handler, 1 },
+  { "addExceptionHandler", gumjs_process_add_exception_handler, 1 },
 
   { NULL, NULL, 0 }
 };
@@ -525,6 +527,28 @@ GUMJS_DEFINE_FUNCTION (gumjs_process_set_exception_handler)
 
   if (old_handler != NULL)
     gum_duk_exception_handler_free (old_handler);
+
+  return 0;
+}
+
+GUMJS_DEFINE_FUNCTION (gumjs_process_add_exception_handler)
+{
+  GumDukProcess * self;
+  GumDukHeapPtr callback;
+  GumDukExceptionHandler * handler;
+
+  self = gumjs_module_from_args (args);
+  GumDukScope scope = GUM_DUK_SCOPE_INIT (self->core);
+
+  _gum_duk_args_parse (args, "F?", &callback);
+
+  handler = g_slice_new (GumDukExceptionHandler);
+  _gum_duk_protect (scope.ctx, callback);
+  handler->callback = callback;
+  handler->core = self->core;
+
+  gum_exceptor_prepend (self->core->exceptor,
+      (GumExceptionHandler) gum_duk_exception_handler_on_exception, handler);
 
   return 0;
 }

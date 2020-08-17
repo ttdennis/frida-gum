@@ -149,6 +149,22 @@ gum_exceptor_add (GumExceptor * self,
 }
 
 void
+gum_exceptor_prepend (GumExceptor * self,
+                  GumExceptionHandler func,
+                  gpointer user_data)
+{
+  GumExceptionHandlerEntry * entry;
+
+  entry = g_slice_new (GumExceptionHandlerEntry);
+  entry->func = func;
+  entry->user_data = user_data;
+
+  GUM_EXCEPTOR_LOCK ();
+  self->handlers = g_slist_prepend (self->handlers, entry);
+  GUM_EXCEPTOR_UNLOCK ();
+}
+
+void
 gum_exceptor_remove (GumExceptor * self,
                      GumExceptionHandler func,
                      gpointer user_data)
